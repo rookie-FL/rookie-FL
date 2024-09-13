@@ -8,7 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 
-public class CalculationUtils {
+public class Simhash {
     //hash码长度为128
     static final int HASH_BIT = 128;
 
@@ -72,3 +72,44 @@ public class CalculationUtils {
         return simHash.toString();
     }
 
+//根据词语及其出现次数的映射，计算并返回每个词语的simHash，并合并这些simHash以生成最终的simHash。
+    public static String calculateSimHash(Map<String,Integer> wordCount){
+        // 新建一个数组用于存放合并后的hash值,初始值为0
+        int[] mergeHash = new int[HASH_BIT];
+        for (int i = 0; i < HASH_BIT; i++) {
+            mergeHash[i] = 0;
+        }
+        // 遍历词语及其出现次数,对每一个词语进行hash加权，然后合并
+        wordCount.forEach((word,count) -> {
+            try {
+                int[] tempHash = hashWeight(wordHash(word),count);//加权后的hash值
+                for (int i = 0; i < tempHash.length; i++) {
+                    mergeHash[i] += tempHash[i];
+                }
+            } catch (HashException e) {
+                e.printStackTrace();
+            }
+        });
+        // 降维得到simHash
+        return getSimHash(mergeHash);
+    }
+
+//计算两个simHash之间的相似度，这里使用了汉明距离（Hamming Distance）来计算相似度
+    public static double getSimilarity(String simHash1, String simHash2) {
+        // 得到两个simHash的汉明距离
+        // 遍历simHash1和simHash2，不相同则汉明距离加1
+        int hamingDistance = 0;
+        int same=0;
+        for (int i = 0; i < simHash1.length(); i++) {
+            if (simHash1.charAt(i) != simHash2.charAt(i)) {
+                hamingDistance++;
+            }
+            if (simHash1.charAt(i)=='1' && simHash2.charAt(i)=='1') {
+                same++;
+            }
+        }
+        System.out.println("两个simHash的汉明距离为：" + hamingDistance);
+
+        return (double)same/(hamingDistance+same);
+    }
+}
